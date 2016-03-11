@@ -374,6 +374,8 @@ public class Messenger {
          int userNum = esql.executeQuery(query);
 	 if (userNum > 0)
 		return login;
+	 else
+		 System.err.println("\tInvalid Credentials.");
          return null;
       }catch(Exception e){
          System.err.println (e.getMessage ());
@@ -719,10 +721,15 @@ public class Messenger {
 		 System.out.print("\tEnter chat id to view: ");
          int chat_id = Integer.parseInt(in.readLine());
 
-         String query = String.format("SELECT * FROM message WHERE chat_id = %d ORDER BY msg_timestamp", chat_id);
-		 List<List<String> > chat = esql.executeQueryAndReturnResult(query);
+		 String query = String.format("SELECT * FROM chat_list WHERE chat_id = %d AND member='%s'", chat_id, user);
+		 int rows = esql.executeQuery(query);
+		 if(rows <= 0){
+			System.err.println(String.format("Chat %d cannot be viewed.", chat_id));
+			return;
+		 }
 
-		 // NEED TO LIMIT THE OUTPUT TO 10
+         query = String.format("SELECT * FROM message WHERE chat_id = %d ORDER BY msg_timestamp", chat_id);
+		 List<List<String> > chat = esql.executeQueryAndReturnResult(query);
 
 		 boolean cont = true;
 		 boolean notendofmessages = true;
@@ -789,12 +796,18 @@ public class Messenger {
 		 System.out.print("\tEnter chat id to edit: ");
          int chat_id = Integer.parseInt(in.readLine());
 
-         String query = String.format("SELECT init_sender FROM chat WHERE chat_id = %d", chat_id);
+		 String query = String.format("SELECT * FROM chat_list WHERE chat_id = %d AND member='%s'", chat_id, user);
+		 int rows = esql.executeQuery(query);
+		 if(rows <= 0){
+			System.err.println(String.format("Chat %d cannot be viewed.", chat_id));
+			return;
+		 }
+
+         query = String.format("SELECT init_sender FROM chat WHERE chat_id = %d", chat_id);
 		 String init_sender = esql.executeQueryAndReturnResult(query).get(0).get(0);
 		 init_sender = init_sender.trim();
 
 		 boolean initial_sender = false;
-		 System.out.println(init_sender.equals(user));
 		 if(init_sender.equals(user) ){
 			 initial_sender = true;
 		 }
@@ -814,10 +827,10 @@ public class Messenger {
 		System.out.println("9. Back");
 		switch (readChoice()){
 		   case 1: SendMessage(esql, user, chat_id); break;
-		   case 2: if(initial_sender) AddMemToChat(esql, user); 
+		   case 2: if(initial_sender) AddMemToChat(esql, user, chat_id); 
 		   			else System.out.println("Unrecognized choice!");
 					break;
-		   case 3: if(initial_sender) DeleteMemFromChat(esql, user);
+		   case 3: if(initial_sender) DeleteMemFromChat(esql, user, chat_id);
 		   			else System.out.println("Unrecognized choice!");
 					break;
 		   case 9: chatsmenu = false; break;
@@ -857,17 +870,71 @@ public class Messenger {
 	   }
    }
 
-   public static void AddMemToChat(Messenger esql, String user){
-      // Your code goes here.
-      // ...
-      // ...
+   public static void AddMemToChat(Messenger esql, String user, int chat_id){
+	   try{
+		   System.out.println("Current members of the chat:");
+		  String query = String.format("SElECT member FROM chat_list WHERE chat_id=%d", chat_id);
+		  esql.executeQueryAndPrintResult(query);
+
+		   System.out.println("Enter member to add: ");
+		   String member = in.readLine();
+		   query = String.format("SELECT * FROM usr WHERE login='%s'", member);
+		   int rows = esql.executeQuery(query);
+		   query = String.format("SELECT * FROM chat_list WHERE chat_id=%d AND member='%s'", chat_id, member);
+		   int inlist = esql.executeQuery(query);
+		   if(rows > 0 && inlist <=0){
+			   //add member
+			   query = String.format("INSERT INTO chat_list(chat_id, member) VALUES(%d, '%s')", chat_id, member);
+			   esql.executeUpdate(query);
+			   System.out.println(String.format("%s added successfully!", member));
+
+		   }
+		   else if(inlist>0){
+			   System.err.println("Member already in chat.");
+		   }
+		   else{
+			   System.err.println("Member does not exist.");
+		   }
+
+	   }catch(Exception e){
+	   		System.err.println(e.getMessage());
+	   }
    }//end 
 
-   public static void DeleteMemFromChat(Messenger esql, String user){
-      // Your code goes here.
-      // ...
-      // ...
-   }//end 
+   public static void DeleteMemFromChat(Messenger esql, String user, int chat_id){
+	   try{
+		   System.out.println("Current members of the chat:");
+		  String query = String.format("SElECT member FROM chat_list WHERE chat_id=%d", chat_id);
+		  esql.executeQueryAndPrintResult(query);
+
+
+		   System.out.println("Enter member to delete: ");
+		   String member = in.readLine();
+		   query = String.format("SELECT * FROM usr WHERE login='%s'", member);
+		   int rows = esql.executeQuery(query);
+		   query = String.format("SELECT * FROM chat_list WHERE chat_id=%d AND member='%s'", chat_id, member);
+		   int inlist = esql.executeQuery(query);
+		   if(rows > 0 && inlist > 0 && member.compareTo(user) != 0){
+			   //add member
+			   query = String.format("DELETE FROM chat_list WHERE chat_id=%d AND member='%s'", chat_id, member);
+			   esql.executeUpdate(query);
+			   System.out.println(String.format("%s deleted successfully!", member));
+
+		   }
+		   else if(inlist<=0){
+			   System.err.println("Member not in chat.");
+		   }
+		   else if(member.compareTo(user) == 0){
+			   System.err.println("Cannot delete yourself from the chat.");
+		   }
+		   else{
+			   System.err.println("Member does not exist.");
+		   }
+
+	   }catch(Exception e){
+	   		System.err.println(e.getMessage());
+	   }   
+	}//end 
 
    //--------------------------------------------------------
    //                DELETE ACCOUNT 
