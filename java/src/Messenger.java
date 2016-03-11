@@ -271,14 +271,14 @@ public class Messenger {
                 System.out.println("MAIN MENU");
                 System.out.println("---------");
                 System.out.println("1. Contacts");
-                System.out.println("2. Messages");
+                System.out.println("2. Update Status Message");
                 System.out.println("3. Chats");
                 System.out.println("4. Delete account");
                 System.out.println(".........................");
                 System.out.println("9. Log out");
                 switch (readChoice()){
                    case 1: Contacts(esql, authorisedUser); break;
-                   case 2: Messages(esql, authorisedUser); break;
+                   case 2: UpdateStatusMessage(esql, authorisedUser); break;
                    case 3: Chats(esql, authorisedUser); break;
                    case 4: authorisedUser = DeleteAccount(esql, authorisedUser); break;
                    case 9: usermenu = false; break;
@@ -414,7 +414,7 @@ public class Messenger {
 
    public static void ListContacts(Messenger esql, String user){
 	try{   
-         String query = String.format("SELECT list_member FROM User_list_contains L, Usr U WHERE U.login = '%s' AND L.list_id = U.contact_list", user);
+         String query = String.format("SELECT list_member, U2.status FROM User_list_contains L, Usr U, Usr U2 WHERE U.login = '%s' AND L.list_id = U.contact_list AND U2.login=L.list_member", user);
 		 int rows = esql.executeQueryAndPrintResult(query);
 
 		 if(rows == 0)
@@ -490,7 +490,7 @@ public class Messenger {
 
    public static void ListBlockedContacts(Messenger esql, String user){
 	try{   
-         String query = String.format("SELECT list_member FROM User_list_contains L, Usr U WHERE U.login = '%s' AND L.list_id = U.block_list", user);
+         String query = String.format("SELECT list_member, U2.status FROM User_list_contains L, Usr U,Usr U2 WHERE U.login = '%s' AND L.list_id = U.block_list AND U2.login=L.list_member", user);
 		 int rows = esql.executeQueryAndPrintResult(query);
 
 		 if(rows == 0)
@@ -561,56 +561,41 @@ public class Messenger {
 		   System.err.println(e.getMessage());
 	   }   }//end
    //--------------------------------------------------------
-   //                MESSAGES 
+   //                UPDATE STATUS MESSAGE
    //--------------------------------------------------------
 
-   public static void Messages(Messenger esql, String user){
-	  boolean messagesmenu = true;
-	  while(messagesmenu) {
-		System.out.println();
-		System.out.println("MESSAGES MENU");
-		System.out.println("---------");
-		System.out.println("1. List Messages");
-		System.out.println("2. New Message");
-		System.out.println("3. Edit Message");
-		System.out.println("4. Delete Message");
-		System.out.println(".........................");
-		System.out.println("9. Back");
-		switch (readChoice()){
-		   case 1: ListMessages(esql); break;
-		   case 2: NewMessage(esql); break;
-		   case 3: EditMessage(esql); break;
-		   case 4: DeleteMessage(esql); break;
-		   case 9: messagesmenu = false; break;
-		   default : System.out.println("Unrecognized choice!"); break;
+   public static void UpdateStatusMessage(Messenger esql, String user){
+	   try{
+		   System.out.println("Your current status message is:");
+		   String query = String.format("SELECT status FROM usr WHERE login='%s'", user);
+		   String status = esql.executeQueryAndReturnResult(query).get(0).get(0);
+		   System.out.println(status);
+	   System.out.println("New status message: ");
+	   String newstatus = in.readLine();
+		while(true){
+			System.out.print("\tupdate (u) or cancel(c)? ");
+			String input = in.readLine();
+			if(input.compareToIgnoreCase("cancel")== 0 || input.compareToIgnoreCase("c") == 0){
+				System.out.println("Status not updated.");
+				break;
+			}
+			else if(input.compareToIgnoreCase("update")== 0 || input.compareToIgnoreCase("u") == 0){
+				//send message
+				query = String.format("UPDATE usr SET status='%s' WHERE login='%s'", newstatus, user);
+				esql.executeUpdate(query);
+				System.out.println("Status updated.");
+				break;
+			}
+			else
+				System.err.println("\tUnrecognized command!");
 		}
-	  }
+
+
+	   }catch(Exception e){
+		   System.err.println(e.getMessage());
+	   }
+	   
    }
-
-   public static void ListMessages(Messenger esql){
-      // Your code goes here.
-      // ...
-      // ...
-   }//end 
-
-   public static void NewMessage(Messenger esql){
-      // Your code goes here.
-      // ...
-      // ...
-   }//end 
-
-   public static void EditMessage(Messenger esql){
-      // Your code goes here.
-      // ...
-      // ...
-   }//end 
-
-   public static void DeleteMessage(Messenger esql){
-      // Your code goes here.
-      // ...
-      // ...
-   }//end 
-
 
    //--------------------------------------------------------
    //                 CHATS
@@ -859,6 +844,7 @@ public class Messenger {
 			else if(input.compareToIgnoreCase("send")== 0 || input.compareToIgnoreCase("s") == 0){
 				//send message
 				String query = String.format("INSERT INTO message(msg_text, sender_login, chat_id) VALUES('%s', '%s', %d)", message, user, chat_id);
+				esql.executeUpdate(query);
 				System.out.println("Message sent.");
 				break;
 			}
