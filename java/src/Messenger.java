@@ -734,7 +734,7 @@ public class Messenger {
 		 System.out.print("\tEnter chat id to view: ");
          int chat_id = Integer.parseInt(in.readLine());
 
-         String query = String.format("SELECT * FROM message WHERE chat_id = %d", chat_id);
+         String query = String.format("SELECT * FROM message WHERE chat_id = %d ORDER BY msg_timestamp", chat_id);
 		 List<List<String> > chat = esql.executeQueryAndReturnResult(query);
 
 		 // NEED TO LIMIT THE OUTPUT TO 10
@@ -800,56 +800,19 @@ public class Messenger {
 
    public static void EditChat(Messenger esql, String user){
 	   //first check if initial sender of chat
-try{
+	try{
 		 System.out.print("\tEnter chat id to edit: ");
          int chat_id = Integer.parseInt(in.readLine());
 
-         String query = String.format("SELECT * FROM message WHERE chat_id = %d", chat_id);
-		 List<List<String> > chat = esql.executeQueryAndReturnResult(query);
+         String query = String.format("SELECT init_sender FROM chat WHERE chat_id = %d", chat_id);
+		 String init_sender = esql.executeQueryAndReturnResult(query).get(0).get(0);
+		 init_sender = init_sender.trim();
 
-		 boolean 
-
-		 boolean cont = true;
-		 boolean notendofmessages = true;
-		 int count = chat.size();
-		 int end = chat.size();
-		 while(cont){
-			end = count;
-			count -= 10;
-			if(count < 0){
-				count = 0;
-				cont = false;
-				notendofmessages = false;
-			}
-		    display10messages(chat, count, end);
-			while(notendofmessages){
-				System.out.print("\tSrcoll up (up(u)) or quit(q) ");
-				String input = in.readLine();
-				if(input.compareToIgnoreCase("quit")== 0 || input.compareToIgnoreCase("q") == 0){
-					cont = false;
-					break;
-				}
-				else if(input.compareToIgnoreCase("up")== 0 || input.compareToIgnoreCase("u") == 0){
-					break;
-				}
-				else
-					System.err.println("\tUnrecognized command!");
-			}	 
-
-			if(notendofmessages == false){
-				System.out.println(String.format("End of Messages in Chat %d", chat_id));
-			}
-
+		 boolean initial_sender = false;
+		 System.out.println(init_sender.equals(user));
+		 if(init_sender.equals(user) ){
+			 initial_sender = true;
 		 }
-
-		 
-
-		 if(chat.isEmpty())
-			 System.out.println("Chat doesn't exist");
-
-      }catch(Exception e){
-         System.err.println (e.getMessage ());
-      } 
 
 	  boolean chatsmenu = true;
 	  while(chatsmenu) {
@@ -858,24 +821,54 @@ try{
 		System.out.println("---------");
 		System.out.println("1. Send Message.");
 		//if initial sender then these options become available
-		System.out.println("2. Add Member to Chat");
-		System.out.println("3. Delete Member from Chat");
+		if(initial_sender){
+			System.out.println("2. Add Member to Chat");
+			System.out.println("3. Delete Member from Chat");
+		}
 		System.out.println(".........................");
 		System.out.println("9. Back");
 		switch (readChoice()){
-		   case 1: SendMessage(esql, user); break;
-		   case 2: AddMemToChat(esql, user); break;
-		   case 3: DeleteMemFromChat(esql, user); break;
+		   case 1: SendMessage(esql, user, chat_id); break;
+		   case 2: if(initial_sender) AddMemToChat(esql, user); 
+		   			else System.out.println("Unrecognized choice!");
+					break;
+		   case 3: if(initial_sender) DeleteMemFromChat(esql, user);
+		   			else System.out.println("Unrecognized choice!");
+					break;
 		   case 9: chatsmenu = false; break;
 		   default : System.out.println("Unrecognized choice!"); break;
 		}
 	  }
+      }catch(Exception e){
+         System.err.println (e.getMessage ());
+      } 
+
    }
 
-   public static void SendMessage(Messenger esql, String user){
-      // Your code goes here.
-      // ...
-      // ...
+   public static void SendMessage(Messenger esql, String user, int chat_id){
+	   try{
+	   System.out.println("Message: ");
+	   String message = in.readLine();
+		while(true){
+			System.out.print("\tSend (s) or Cancel(c)? ");
+			String input = in.readLine();
+			if(input.compareToIgnoreCase("cancel")== 0 || input.compareToIgnoreCase("c") == 0){
+				System.out.println("Message not sent.");
+				break;
+			}
+			else if(input.compareToIgnoreCase("send")== 0 || input.compareToIgnoreCase("s") == 0){
+				//send message
+				String query = String.format("INSERT INTO message(msg_text, sender_login, chat_id) VALUES('%s', '%s', %d)", message, user, chat_id);
+				System.out.println("Message sent.");
+				break;
+			}
+			else
+				System.err.println("\tUnrecognized command!");
+		}
+
+	   }catch(Exception e){
+		   System.err.println(e.getMessage());
+	   }
    }
 
    public static void AddMemToChat(Messenger esql, String user){
