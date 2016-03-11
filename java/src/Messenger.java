@@ -822,6 +822,7 @@ public class Messenger {
 		if(initial_sender){
 			System.out.println("2. Add Member to Chat");
 			System.out.println("3. Delete Member from Chat");
+			System.out.println("4. Delete Chat");
 		}
 		System.out.println(".........................");
 		System.out.println("9. Back");
@@ -833,6 +834,9 @@ public class Messenger {
 		   case 3: if(initial_sender) DeleteMemFromChat(esql, user, chat_id);
 		   			else System.out.println("Unrecognized choice!");
 					break;
+		   case 4: if(initial_sender) chatsmenu = DeleteChat(esql, user, chat_id);
+		   			else System.out.println("Unrecognized choice!");
+					break;
 		   case 9: chatsmenu = false; break;
 		   default : System.out.println("Unrecognized choice!"); break;
 		}
@@ -840,6 +844,41 @@ public class Messenger {
       }catch(Exception e){
          System.err.println (e.getMessage ());
       } 
+
+   }
+
+//returns false when deleted chat
+   public static boolean DeleteChat(Messenger esql, String user, int chat_id){
+	   try{
+		while(true){
+		   System.out.println(String.format("Are you sure you want to delete chat %d? yes(y) or no(n)", chat_id));
+			String input = in.readLine();
+			if(input.compareToIgnoreCase("no")== 0 || input.compareToIgnoreCase("n") == 0){
+				break;
+			}
+			else if(input.compareToIgnoreCase("yes")== 0 || input.compareToIgnoreCase("y") == 0){
+				//delete chat
+				String query = String.format("DELETE FROM chat_list WHERE chat_id=%d", chat_id);
+				esql.executeUpdate(query);
+				query = String.format("DELETE FROM message WHERE chat_id=%d", chat_id);
+				esql.executeUpdate(query);
+				query = String.format("DELETE FROM chat WHERE chat_id=%d", chat_id);
+				esql.executeUpdate(query);
+
+				System.out.println(String.format("Chat %d deleted successfully!", chat_id));
+				return false;
+
+			}
+			else
+				System.err.println("\tUnrecognized command!");
+		}	 
+
+		return true;
+
+	 }catch(Exception e){
+		 System.err.println(e.getMessage());
+		 return true;
+	 }
 
    }
 
