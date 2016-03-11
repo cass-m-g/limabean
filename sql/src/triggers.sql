@@ -1,0 +1,14 @@
+CREATE LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION insert_msg_timestamp()
+RETURNS TRIGGER AS 
+$BODY$
+BEGIN
+	New.msg_timestamp := now();
+	RETURN NEW;
+END
+$BODY$ 
+LANGUAGE plpgsql VOLATILE;
+
+CREATE TRIGGER name BEFORE INSERT 
+ON message FOR EACH ROW 
+EXECUTE PROCEDURE insert_msg_timestamp()

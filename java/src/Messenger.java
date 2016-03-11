@@ -715,6 +715,11 @@ public class Messenger {
 	   esql.executeUpdate(query);
 	  }
 
+	   String message = "Welcome to the chat!";
+	   query = String.format("INSERT INTO message(msg_text, sender_login, chat_id) VALUES('%s', '%s', %d)", message, user, chat_id);
+
+	   esql.executeUpdate(query);
+
 	   System.out.println("\tChat created Successfully");
 
 	   } catch(Exception e){
@@ -730,11 +735,40 @@ public class Messenger {
          int chat_id = Integer.parseInt(in.readLine());
 
          String query = String.format("SELECT * FROM message WHERE chat_id = %d ORDER BY msg_timestamp", chat_id);
-		 int rows = esql.executeQueryAndPrintResult(query);
+		 List<List<String> > chat = esql.executeQueryAndReturnResult(query);
 
 		 // NEED TO LIMIT THE OUTPUT TO 10
 
-		 if(rows == 0)
+		 boolean cont = true;
+		 int count = chat.size();
+		 int end = chat.size();
+		 while(cont){
+			end = count;
+			count -= 10;
+			if(count < 0){
+				count = 0;
+				cont = false;
+			}
+		    display10messages(chat, count, end);
+			while(true){
+				System.out.print("\tSrcoll up (up(u)) or quit(q) ");
+				String input = in.readLine();
+				if(input.compareToIgnoreCase("quit")== 0 || input.compareToIgnoreCase("q") == 0){
+					cont = false;
+					break;
+				}
+				else if(input.compareToIgnoreCase("up")== 0 || input.compareToIgnoreCase("u") == 0){
+					cont = true;
+					break;
+				}
+				else
+					System.err.println("\tUnrecognized command!");
+			}	 
+		 }
+
+		 
+
+		 if(chat.isEmpty())
 			 System.out.println("Chat doesn't exist");
 
       }catch(Exception e){
@@ -742,6 +776,21 @@ public class Messenger {
       } 
 
    }//end 
+
+   public static void display10messages(List<List<String>> chat, int begin, int end){
+
+	   for(int i = begin; i < chat.size() && i< end; i++){
+		   String tmp;
+		   tmp = String.format("Sender: %s", chat.get(i).get(3));
+		   System.out.println(tmp);
+		   tmp = String.format("Time: %s", chat.get(i).get(2));
+		   System.out.println(tmp);
+		   tmp = String.format("Message: %s", chat.get(i).get(1));
+		   System.out.println(tmp);
+		   System.out.println();
+	   }
+
+   }
 
    public static void EditChat(Messenger esql, String user){
 	   //first check if initial sender of chat
@@ -751,17 +800,26 @@ public class Messenger {
 		System.out.println();
 		System.out.println("CHAT EDIT MENU");
 		System.out.println("---------");
-		System.out.println("1. Add Member to Chat");
-		System.out.println("2. Delete Member from Chat");
+		System.out.println("1. Send Message.");
+		//if initial sender then these options become available
+		System.out.println("2. Add Member to Chat");
+		System.out.println("3. Delete Member from Chat");
 		System.out.println(".........................");
 		System.out.println("9. Back");
 		switch (readChoice()){
-		   case 1: AddMemToChat(esql, user); break;
-		   case 2: DeleteMemFromChat(esql, user); break;
+		   case 1: SendMessage(esql, user); break;
+		   case 2: AddMemToChat(esql, user); break;
+		   case 3: DeleteMemFromChat(esql, user); break;
 		   case 9: chatsmenu = false; break;
 		   default : System.out.println("Unrecognized choice!"); break;
 		}
 	  }
+   }
+
+   public static void SendMessage(Messenger esql, String user){
+      // Your code goes here.
+      // ...
+      // ...
    }
 
    public static void AddMemToChat(Messenger esql, String user){
