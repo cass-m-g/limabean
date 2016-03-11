@@ -280,7 +280,7 @@ public class Messenger {
                    case 1: Contacts(esql, authorisedUser); break;
                    case 2: Messages(esql, authorisedUser); break;
                    case 3: Chats(esql, authorisedUser); break;
-                   case 4: DeleteAccount(esql, authorisedUser); break;
+                   case 4: authorisedUser = DeleteAccount(esql, authorisedUser); break;
                    case 9: usermenu = false; break;
                    default : System.out.println("Unrecognized choice!"); break;
                 }
@@ -734,12 +734,13 @@ public class Messenger {
 		 System.out.print("\tEnter chat id to view: ");
          int chat_id = Integer.parseInt(in.readLine());
 
-         String query = String.format("SELECT * FROM message WHERE chat_id = %d ORDER BY msg_timestamp", chat_id);
+         String query = String.format("SELECT * FROM message WHERE chat_id = %d", chat_id);
 		 List<List<String> > chat = esql.executeQueryAndReturnResult(query);
 
 		 // NEED TO LIMIT THE OUTPUT TO 10
 
 		 boolean cont = true;
+		 boolean notendofmessages = true;
 		 int count = chat.size();
 		 int end = chat.size();
 		 while(cont){
@@ -748,9 +749,10 @@ public class Messenger {
 			if(count < 0){
 				count = 0;
 				cont = false;
+				notendofmessages = false;
 			}
 		    display10messages(chat, count, end);
-			while(true){
+			while(notendofmessages){
 				System.out.print("\tSrcoll up (up(u)) or quit(q) ");
 				String input = in.readLine();
 				if(input.compareToIgnoreCase("quit")== 0 || input.compareToIgnoreCase("q") == 0){
@@ -758,12 +760,16 @@ public class Messenger {
 					break;
 				}
 				else if(input.compareToIgnoreCase("up")== 0 || input.compareToIgnoreCase("u") == 0){
-					cont = true;
 					break;
 				}
 				else
 					System.err.println("\tUnrecognized command!");
 			}	 
+
+			if(notendofmessages == false){
+				System.out.println(String.format("End of Messages in Chat %d", chat_id));
+			}
+
 		 }
 
 		 
@@ -794,6 +800,56 @@ public class Messenger {
 
    public static void EditChat(Messenger esql, String user){
 	   //first check if initial sender of chat
+try{
+		 System.out.print("\tEnter chat id to edit: ");
+         int chat_id = Integer.parseInt(in.readLine());
+
+         String query = String.format("SELECT * FROM message WHERE chat_id = %d", chat_id);
+		 List<List<String> > chat = esql.executeQueryAndReturnResult(query);
+
+		 boolean 
+
+		 boolean cont = true;
+		 boolean notendofmessages = true;
+		 int count = chat.size();
+		 int end = chat.size();
+		 while(cont){
+			end = count;
+			count -= 10;
+			if(count < 0){
+				count = 0;
+				cont = false;
+				notendofmessages = false;
+			}
+		    display10messages(chat, count, end);
+			while(notendofmessages){
+				System.out.print("\tSrcoll up (up(u)) or quit(q) ");
+				String input = in.readLine();
+				if(input.compareToIgnoreCase("quit")== 0 || input.compareToIgnoreCase("q") == 0){
+					cont = false;
+					break;
+				}
+				else if(input.compareToIgnoreCase("up")== 0 || input.compareToIgnoreCase("u") == 0){
+					break;
+				}
+				else
+					System.err.println("\tUnrecognized command!");
+			}	 
+
+			if(notendofmessages == false){
+				System.out.println(String.format("End of Messages in Chat %d", chat_id));
+			}
+
+		 }
+
+		 
+
+		 if(chat.isEmpty())
+			 System.out.println("Chat doesn't exist");
+
+      }catch(Exception e){
+         System.err.println (e.getMessage ());
+      } 
 
 	  boolean chatsmenu = true;
 	  while(chatsmenu) {
@@ -838,10 +894,40 @@ public class Messenger {
    //                DELETE ACCOUNT 
    //--------------------------------------------------------
 
-   public static void DeleteAccount(Messenger esql, String user){
-      // Your code goes here.
-      // ...
-      // ...
+   public static String DeleteAccount(Messenger esql, String user){
+
+      try{
+			while(true){
+			   System.out.println("Are you sure you want to delete your account? yes(y) or no(n)");
+				String input = in.readLine();
+				if(input.compareToIgnoreCase("no")== 0 || input.compareToIgnoreCase("n") == 0){
+					break;
+				}
+				else if(input.compareToIgnoreCase("yes")== 0 || input.compareToIgnoreCase("y") == 0){
+					System.out.print("Please enter your password to verify deleting your account: ");
+					String password = in.readLine();
+					 String query = String.format("SELECT * FROM Usr WHERE login = '%s' AND password = '%s'", user, password);
+						 int userNum = esql.executeQuery(query);
+					 if (userNum > 0){
+						//delete account
+						query = String.format("DELETE FROM usr WHERE login='%s' AND password='%s'", user, password);
+						esql.executeUpdate(query);
+						System.out.println("Your account has been successfully deleted.");
+						//return null;
+					}
+					else{
+						System.err.println("Incorrect password.");
+					}
+					break;
+				}
+				else
+					System.err.println("\tUnrecognized command!");
+			}	 
+      }catch(Exception e){
+         System.err.println (e.getMessage ());
+		 return user;
+      }
+	  return user;
    }//end DeleteAccount 
 
-}//end Messenger
+}
