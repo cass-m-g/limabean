@@ -644,7 +644,7 @@ public class Messenger {
 	try{   
 		 
         // String query = String.format("SELECT chat.chat_id, chat_type, init_sender, msg_timestamp FROM chat, chat_list, message WHERE member = '%s' AND chat.chat_id = chat_list.chat_id AND chat.chat_id = message.chat_id ORDER BY msg_timestamp", user);
-		String query = String.format("SELECT * FROM chat, chat_list WHERE member = '%s' AND chat.chat_id = chat_list.chat_id", user);
+		String query = String.format("SELECT chat.chat_id, chat_type, init_sender, max AS msg_timestamp FROM chat, chat_list, (SELECT chat_id, max(msg_timestamp) FROM message GROUP BY chat_id) msg WHERE chat_list.member = '%s' AND chat.chat_id = msg.chat_id AND chat_list.chat_id = msg.chat_id ORDER BY max ASC;", user);
 		 int rows = esql.executeQueryAndPrintResult(query);
 
 		 if(rows == 0)
