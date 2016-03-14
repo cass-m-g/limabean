@@ -285,7 +285,7 @@ public class Messenger {
                    case 1: Contacts(esql, authorisedUser); break;
                    case 2: UpdateStatusMessage(esql, authorisedUser); break;
                    case 3: Chats(esql, authorisedUser); break;
-                   case 4: authorisedUser = DeleteAccount(esql, authorisedUser); usermenu = authorizedUser != null; break;
+                   case 4: authorisedUser = DeleteAccount(esql, authorisedUser); usermenu = authorisedUser != null; break;
                    case 9: usermenu = false; break;
                    default : System.out.println("Unrecognized choice!"); break;
                 }
@@ -651,70 +651,93 @@ public class Messenger {
 
    public static void NewChat(Messenger esql, String user){
 	   try{
-		String query = String.format("INSERT INTO chat(chat_type, init_sender) VALUES('private', '%s')", user);
-		esql.executeUpdate(query);
-	   int chat_id = esql.getCurrSeqVal("chat_chat_id_seq");
-		query = String.format("INSERT INTO chat_list(chat_id, member) VALUES(%d, '%s')", chat_id, user);
-		esql.executeUpdate(query);
-	   boolean cont = true;
-	   int i = 0;
-	  while(cont) {
-		System.out.println();
-	    System.out.print("\tAdd member to chat: ");
-		String member = sanitize_input(in.readLine());
+      String query;
 
-		//does member exist
-		query = String.format("Select * from usr where login = '%s'", member);
-		int rows = esql.executeQuery(query);
-		query = String.format("Select * from chat_list where chat_id = %d AND member = '%s'", chat_id, member);
-		int alreadycontains = esql.executeQuery(query);
+      int chat_id = 0;
+      boolean cont = true;
+      boolean created = false;
+       int i = 0;
+      while(cont) {
+        System.out.println("Your contacts:");
+        query = String.format("SELECT list_member FROM User_list_contains L, Usr U WHERE U.login = '%s' AND L.list_id = U.contact_list", user);
+        esql.executeQueryAndPrintResult(query);
 
-		if(rows > 0 && member.compareTo(user) != 0 && alreadycontains <=0){
-			query = String.format("INSERT INTO chat_list(chat_id, member) VALUES(%d, '%s')", chat_id, member);
-			esql.executeUpdate(query);
-			System.out.println("\tMember added to chat");
-			i++;			
-		}
-		else{
-			if(member.compareTo(user) == 0)
-				System.err.println("\tCannot add yourself to chat.");
-			else if(alreadycontains > 0)
-				System.err.println("\tMember already in chat");
-			else
-				System.err.println("\tMember does not exist.");
-		}
+        System.out.print("\tAdd member to chat: ");
+        String member = sanitize_input(in.readLine());
+
+        //does member exist
+        query = String.format("Select * from User_list_contains L, Usr U where U.login = '%s' AND L.list_id = U.contact_list AND L.list_member='%s'", user, member);
+        int rows = esql.executeQuery(query);
+        query = String.format("SELECT * FROM User_list_contains L, Usr U WHERE U.login = '%s' AND L.list_id = U.block_list AND L.list_member='%s'", member, user);
+        int blocked = esql.executeQuery(query);
+        query = String.format("Select * from chat_list where chat_id = %d AND member = '%s'", chat_id, member);
+        int alreadycontains = esql.executeQuery(query);
+
+        if(rows > 0 && member.compareTo(user) != 0 && alreadycontains <=0 && blocked == 0){
+          if (!created)
+          {
+            query = String.format("INSERT INTO chat(chat_type, init_sender) VALUES('private', '%s')", user);
+            esql.executeUpdate(query);
+            chat_id = esql.getCurrSeqVal("chat_chat_id_seq");
+            query = String.format("INSERT INTO chat_list(chat_id, member) VALUES(%d, '%s')", chat_id, user);
+            esql.executeUpdate(query);
+            created = true;
+          }
+          query = String.format("INSERT INTO chat_list(chat_id, member) VALUES(%d, '%s')", chat_id, member);
+          esql.executeUpdate(query);
+          System.out.println("\tMember added to chat");
+          i++;			
+
+        }
+        else{
+          if(member.compareTo(user) == 0)
+            System.err.println("\tCannot add yourself to chat.");
+          else if(alreadycontains > 0)
+            System.err.println("\tMember already in chat");
+          else if (blocked > 0)
+            System.err.println("\tYou have been blocked by this user");
+          else
+            System.err.println("\tMember is not in your contacts.");
+        }
 
 
-		while(true){
-			System.out.print("\tWould you like to add another member? (yes(y) or no(n)) ");
-			String input = sanitize_input(in.readLine());
-			if(input.compareToIgnoreCase("no")== 0 || input.compareToIgnoreCase("n") == 0){
-				cont = false;
-				break;
-			}
-			else if(input.compareToIgnoreCase("yes")== 0 || input.compareToIgnoreCase("y") == 0){
-				cont = true;
-				break;
-			}
-			else
-				System.err.println("\tUnrecognized command!");
-		}
+        while(true){
+          System.out.print("\tWould you like to add another member? (yes(y) or no(n)) ");
+          String input = sanitize_input(in.readLine());
+          if(input.compareToIgnoreCase("no")== 0 || input.compareToIgnoreCase("n") == 0){
+            cont = false;
+            break;
+          }
+          else if(input.compareToIgnoreCase("yes")== 0 || input.compareToIgnoreCase("y") == 0){
+            cont = true;
+            break;
+          }
+          else
+            System.err.println("\tUnrecognized command!");
+        }
 
-	  }
+      }
 
-	  String chat_type = null;
-	  if(i > 1){
-		  chat_type = "group";
-	   query = String.format("UPDATE chat SET chat_type = '%s' WHERE chat_id = %d", chat_type, chat_id);
-	   esql.executeUpdate(query);
-	  }
+      String chat_type = null;
+      if (i > 0)
+      {
 
-	   String message = "Welcome to the chat!";
-	   query = String.format("INSERT INTO message(msg_text, sender_login, chat_id) VALUES('%s', '%s', %d)", message, user, chat_id);
+        if(i > 1){
+          chat_type = "group";
+          query = String.format("UPDATE chat SET chat_type = '%s' WHERE chat_id = %d", chat_type, chat_id);
+          esql.executeUpdate(query);
+        }
+         String message = "Welcome to the chat!";
+         query = String.format("INSERT INTO message(msg_text, sender_login, chat_id) VALUES('%s', '%s', %d)", message, user, chat_id);
 
-	   esql.executeUpdate(query);
+         esql.executeUpdate(query);
 
-	   System.out.println("\tChat created Successfully");
+         System.out.println("\tChat created Successfully");
+      }
+      else
+      {
+        System.out.println("\tChat wasn't created");
+      }
 
 	   } catch(Exception e){
 		   System.err.println(e.getMessage());
