@@ -183,7 +183,7 @@ public class Messenger {
        int rowCount = 0;
 
        // iterates through the result set and count nuber of results.
-       if(rs.next()){
+       while(rs.next()){
           rowCount++;
        }//end while
        stmt.close ();
@@ -220,6 +220,11 @@ public class Messenger {
          // ignored.
       }//end try
    }//end cleanup
+
+   public static String sanitize_input(String s){
+     String ret = s.replace("'", "''");
+     return ret;
+   }
 
    /**
     * The main execution method
@@ -280,7 +285,7 @@ public class Messenger {
                    case 1: Contacts(esql, authorisedUser); break;
                    case 2: UpdateStatusMessage(esql, authorisedUser); break;
                    case 3: Chats(esql, authorisedUser); break;
-                   case 4: authorisedUser = DeleteAccount(esql, authorisedUser); break;
+                   case 4: authorisedUser = DeleteAccount(esql, authorisedUser); usermenu = authorizedUser != null; break;
                    case 9: usermenu = false; break;
                    default : System.out.println("Unrecognized choice!"); break;
                 }
@@ -320,7 +325,7 @@ public class Messenger {
       do {
          System.out.print("Please make your choice: ");
          try { // read the integer, parse it and break.
-            input = Integer.parseInt(in.readLine());
+            input = Integer.parseInt(sanitize_input(in.readLine()));
 			 System.out.println();
             break;
          }catch (Exception e) {
@@ -338,11 +343,11 @@ public class Messenger {
    public static void CreateUser(Messenger esql){
       try{
          System.out.print("\tEnter user login: ");
-         String login = in.readLine();
+         String login = sanitize_input(in.readLine());
          System.out.print("\tEnter user password: ");
-         String password = in.readLine();
+         String password = sanitize_input(in.readLine());
          System.out.print("\tEnter user phone: ");
-         String phone = in.readLine();
+         String phone = sanitize_input(in.readLine());
 
 	 //Creating empty contact\block lists for a user
 	 esql.executeUpdate("INSERT INTO USER_LIST(list_type) VALUES ('block')");
@@ -355,7 +360,8 @@ public class Messenger {
          esql.executeUpdate(query);
          System.out.println ("User successfully created!");
       }catch(Exception e){
-         System.err.println (e.getMessage ());
+        System.out.println("Your username or phone number is already in use");
+         //System.err.println (e.getMessage ());
       }
    }//end
    
@@ -366,9 +372,9 @@ public class Messenger {
    public static String LogIn(Messenger esql){
       try{
          System.out.print("\tEnter user login: ");
-         String login = in.readLine();
+         String login = sanitize_input(in.readLine());
          System.out.print("\tEnter user password: ");
-         String password = in.readLine();
+         String password = sanitize_input(in.readLine());
 
          String query = String.format("SELECT * FROM Usr WHERE login = '%s' AND password = '%s'", login, password);
          int userNum = esql.executeQuery(query);
@@ -430,7 +436,7 @@ public class Messenger {
    public static void AddToContacts(Messenger esql, String user){
 	   try{
 		 System.out.print("\tEnter contact to add: ");
-         String contact = in.readLine();
+         String contact = sanitize_input(in.readLine());
 		 String query = String.format("SELECT * FROM Usr WHERE login = '%s'", contact);
          int userNum = esql.executeQuery(query);
 		 if (userNum > 0 && user.compareTo(contact) != 0){
@@ -467,7 +473,7 @@ public class Messenger {
    public static void DeleteFromContacts(Messenger esql, String user){
 	   try{
 		 System.out.print("\tEnter contact to delete: ");
-         String contact = in.readLine();
+         String contact = sanitize_input(in.readLine());
 	
 	     String query = String.format("SELECT contact_list FROM usr WHERE login = '%s'", user);
 	     String list_id = esql.executeQueryAndReturnResult(query).get(0).get(0);
@@ -506,7 +512,7 @@ public class Messenger {
    public static void BlockContact(Messenger esql, String user){
 	   try{
 		 System.out.print("\tEnter contact to block: ");
-         String contact = in.readLine();
+         String contact = sanitize_input(in.readLine());
 		 String query = String.format("SELECT * FROM Usr WHERE login = '%s'", contact);
          int userNum = esql.executeQuery(query);
 		 if (userNum > 0 && user.compareTo(contact) != 0){
@@ -542,7 +548,7 @@ public class Messenger {
    public static void UnblockContact(Messenger esql, String user){
 	   try{
 		 System.out.print("\tEnter contact to unblock: ");
-         String contact = in.readLine();
+         String contact = sanitize_input(in.readLine());
 	
 	     String query = String.format("SELECT block_list FROM usr WHERE login = '%s'", user);
 	     String list_id = esql.executeQueryAndReturnResult(query).get(0).get(0);
@@ -561,7 +567,8 @@ public class Messenger {
 		 }
 	   } catch(Exception e){
 		   System.err.println(e.getMessage());
-	   }   }//end
+	   }   
+   }//end
    //--------------------------------------------------------
    //                UPDATE STATUS MESSAGE
    //--------------------------------------------------------
@@ -573,10 +580,10 @@ public class Messenger {
 		   String status = esql.executeQueryAndReturnResult(query).get(0).get(0);
 		   System.out.println(status);
 	   System.out.println("New status message: ");
-	   String newstatus = in.readLine();
+	   String newstatus = sanitize_input(in.readLine());
 		while(true){
 			System.out.print("\tupdate (u) or cancel(c)? ");
-			String input = in.readLine();
+			String input = sanitize_input(in.readLine());
 			if(input.compareToIgnoreCase("cancel")== 0 || input.compareToIgnoreCase("c") == 0){
 				System.out.println("Status not updated.");
 				break;
@@ -654,7 +661,7 @@ public class Messenger {
 	  while(cont) {
 		System.out.println();
 	    System.out.print("\tAdd member to chat: ");
-		String member = in.readLine();
+		String member = sanitize_input(in.readLine());
 
 		//does member exist
 		query = String.format("Select * from usr where login = '%s'", member);
@@ -680,7 +687,7 @@ public class Messenger {
 
 		while(true){
 			System.out.print("\tWould you like to add another member? (yes(y) or no(n)) ");
-			String input = in.readLine();
+			String input = sanitize_input(in.readLine());
 			if(input.compareToIgnoreCase("no")== 0 || input.compareToIgnoreCase("n") == 0){
 				cont = false;
 				break;
@@ -719,7 +726,7 @@ public class Messenger {
    public static void ViewChat(Messenger esql, String user){
 	   try{
 		 System.out.print("\tEnter chat id to view: ");
-         int chat_id = Integer.parseInt(in.readLine());
+         int chat_id = Integer.parseInt(sanitize_input(in.readLine()));
 
 		 String query = String.format("SELECT * FROM chat_list WHERE chat_id = %d AND member='%s'", chat_id, user);
 		 int rows = esql.executeQuery(query);
@@ -746,7 +753,7 @@ public class Messenger {
 		    display10messages(chat, count, end);
 			while(notendofmessages){
 				System.out.print("\tSrcoll up (up(u)) or quit(q) ");
-				String input = in.readLine();
+				String input = sanitize_input(in.readLine());
 				if(input.compareToIgnoreCase("quit")== 0 || input.compareToIgnoreCase("q") == 0){
 					cont = false;
 					break;
@@ -794,7 +801,7 @@ public class Messenger {
 	   //first check if initial sender of chat
 	try{
 		 System.out.print("\tEnter chat id to edit: ");
-         int chat_id = Integer.parseInt(in.readLine());
+         int chat_id = Integer.parseInt(sanitize_input(in.readLine()));
 
 		 String query = String.format("SELECT * FROM chat_list WHERE chat_id = %d AND member='%s'", chat_id, user);
 		 int rows = esql.executeQuery(query);
@@ -852,7 +859,7 @@ public class Messenger {
 	   try{
 		while(true){
 		   System.out.println(String.format("Are you sure you want to delete chat %d? yes(y) or no(n)", chat_id));
-			String input = in.readLine();
+			String input = sanitize_input(in.readLine());
 			if(input.compareToIgnoreCase("no")== 0 || input.compareToIgnoreCase("n") == 0){
 				break;
 			}
@@ -885,10 +892,10 @@ public class Messenger {
    public static void SendMessage(Messenger esql, String user, int chat_id){
 	   try{
 	   System.out.println("Message: ");
-	   String message = in.readLine();
+	   String message = sanitize_input(in.readLine());
 		while(true){
 			System.out.print("\tSend (s) or Cancel(c)? ");
-			String input = in.readLine();
+			String input = sanitize_input(in.readLine());
 			if(input.compareToIgnoreCase("cancel")== 0 || input.compareToIgnoreCase("c") == 0){
 				System.out.println("Message not sent.");
 				break;
@@ -912,11 +919,11 @@ public class Messenger {
    public static void AddMemToChat(Messenger esql, String user, int chat_id){
 	   try{
 		   System.out.println("Current members of the chat:");
-		  String query = String.format("SElECT member FROM chat_list WHERE chat_id=%d", chat_id);
-		  esql.executeQueryAndPrintResult(query);
+		   String query = String.format("SElECT member FROM chat_list WHERE chat_id=%d", chat_id);
+		   esql.executeQueryAndPrintResult(query);
 
 		   System.out.println("Enter member to add: ");
-		   String member = in.readLine();
+		   String member = sanitize_input(in.readLine());
 		   query = String.format("SELECT * FROM usr WHERE login='%s'", member);
 		   int rows = esql.executeQuery(query);
 		   query = String.format("SELECT * FROM chat_list WHERE chat_id=%d AND member='%s'", chat_id, member);
@@ -926,6 +933,9 @@ public class Messenger {
 			   query = String.format("INSERT INTO chat_list(chat_id, member) VALUES(%d, '%s')", chat_id, member);
 			   esql.executeUpdate(query);
 			   System.out.println(String.format("%s added successfully!", member));
+
+         query = String.format("UPDATE chat SET chat_type = 'group' WHERE chat_id = %d", chat_id);
+         esql.executeUpdate(query);
 
 		   }
 		   else if(inlist>0){
@@ -948,16 +958,35 @@ public class Messenger {
 
 
 		   System.out.println("Enter member to delete: ");
-		   String member = in.readLine();
+		   String member = sanitize_input(in.readLine());
 		   query = String.format("SELECT * FROM usr WHERE login='%s'", member);
 		   int rows = esql.executeQuery(query);
 		   query = String.format("SELECT * FROM chat_list WHERE chat_id=%d AND member='%s'", chat_id, member);
 		   int inlist = esql.executeQuery(query);
 		   if(rows > 0 && inlist > 0 && member.compareTo(user) != 0){
-			   //add member
+			   //delete member
 			   query = String.format("DELETE FROM chat_list WHERE chat_id=%d AND member='%s'", chat_id, member);
 			   esql.executeUpdate(query);
 			   System.out.println(String.format("%s deleted successfully!", member));
+        
+         query = String.format("SELECT * FROM chat_list WHERE chat_id=%d", chat_id);
+         rows = esql.executeQuery(query);
+		     esql.executeQueryAndPrintResult(query);
+         System.out.println(rows);
+         if (rows == 2)
+         {
+           query = String.format("UPDATE chat SET chat_type = 'private' WHERE chat_id = %d", chat_id);
+           esql.executeUpdate(query);
+         }
+         else if (rows == 1)
+         {
+           query = String.format("DELETE FROM chat_list WHERE chat_id=%d", chat_id);
+				   esql.executeUpdate(query);
+				   query = String.format("DELETE FROM message WHERE chat_id=%d", chat_id);
+				   esql.executeUpdate(query);
+           query = String.format("DELETE FROM chat WHERE chat_id=%d", chat_id);
+           esql.executeUpdate(query);
+         }
 
 		   }
 		   else if(inlist<=0){
@@ -984,13 +1013,13 @@ public class Messenger {
       try{
 			while(true){
 			   System.out.println("Are you sure you want to delete your account? yes(y) or no(n)");
-				String input = in.readLine();
+				String input = sanitize_input(in.readLine());
 				if(input.compareToIgnoreCase("no")== 0 || input.compareToIgnoreCase("n") == 0){
 					break;
 				}
 				else if(input.compareToIgnoreCase("yes")== 0 || input.compareToIgnoreCase("y") == 0){
 					System.out.print("Please enter your password to verify deleting your account: ");
-					String password = in.readLine();
+					String password = sanitize_input(in.readLine());
 					 String query = String.format("SELECT * FROM Usr WHERE login = '%s' AND password = '%s'", user, password);
 						 int userNum = esql.executeQuery(query);
 					 if (userNum > 0){
@@ -998,7 +1027,7 @@ public class Messenger {
 						query = String.format("DELETE FROM usr WHERE login='%s' AND password='%s'", user, password);
 						esql.executeUpdate(query);
 						System.out.println("Your account has been successfully deleted.");
-						//return null;
+					  return null;
 					}
 					else{
 						System.err.println("Incorrect password.");
@@ -1009,8 +1038,27 @@ public class Messenger {
 					System.err.println("\tUnrecognized command!");
 			}	 
       }catch(Exception e){
-         System.err.println (e.getMessage ());
-		 return user;
+        try{
+          System.out.println("Your account is still linked to objects. Are you sure you want to continue? yes(y) or no(n)");
+
+				  String input = sanitize_input(in.readLine());
+				  if(input.compareToIgnoreCase("no")== 0 || input.compareToIgnoreCase("n") == 0){
+					  return user;
+				  }
+				  else if(input.compareToIgnoreCase("yes")== 0 || input.compareToIgnoreCase("y") == 0){
+
+            String query = String.format("UPDATE usr SET password='!JbB_3a#A)BG?1' WHERE login='%s'", user);
+						esql.executeUpdate(query);
+						System.out.println("Your account has been successfully deleted.");
+            return null;
+          }
+        }
+        catch (Exception e2)
+        {
+          System.err.println (e2.getMessage ());
+        }
+
+		  return user;
       }
 	  return user;
    }//end DeleteAccount 
